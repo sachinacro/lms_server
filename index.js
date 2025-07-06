@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import { connectDb } from "./database/db.js";
 import Razorpay from "razorpay";
 import bodyParser from "body-parser";
-// import cors from "cors";
+import cors from "cors";
 
 dotenv.config();
 
@@ -14,10 +14,10 @@ export const instance = new Razorpay({
 
 const app = express();
 
-// app.use(cors({
-//   origin: "http://localhost:5173", // React app ka URL
-//   credentials: true
-// }));
+app.use(cors({
+  origin: "https://lms-frontend-kdnp.onrender.com", // React app ka URL
+  credentials: true
+}));
 
 
 app.use(express.json());
