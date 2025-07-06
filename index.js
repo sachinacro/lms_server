@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import { connectDb } from "./database/db.js";
 import Razorpay from "razorpay";
 import bodyParser from "body-parser";
-import cors from "cors";
+// import cors from "cors";
 
 dotenv.config();
 
