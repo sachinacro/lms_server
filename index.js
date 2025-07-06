@@ -14,10 +14,10 @@ export const instance = new Razorpay({
 
 const app = express();
 
-app.use(cors({
-  origin: "http://localhost:5173", // React app ka URL
-  credentials: true
-}));
+// app.use(cors({
+//   origin: "http://localhost:5173", // React app ka URL
+//   credentials: true
+// }));
 
 
 app.use(express.json());
