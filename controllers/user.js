@@ -3,7 +3,9 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import sendMail, { sendForgotMail } from "../middlewares/sendMail.js";
 import TryCatch from "../middlewares/TryCatch.js";
-
+import { Courses } from "../models/Courses.js";
+import { Progress } from "../models/Progress.js";
+import { Lecture } from "../models/Lecture.js";
 export const register = TryCatch(async (req, res) => {
   const { email, name, password, phone } = req.body;
 
@@ -126,11 +128,15 @@ export const resetPassword = TryCatch(async (req, res) => {
 });
 
 
+
+
 export const myProfile = TryCatch(async (req, res) => {
   const user = await User.findById(req.user._id);
-
   res.json({ user });
 });
+
+
+
 
 
 
@@ -145,31 +151,30 @@ export const getDashboardInfo = TryCatch(async (req, res) => {
       },
     });
 
-  const totalCourses = user.subscription.length;
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  const totalCourses = user.subscription?.length || 0;
   let completedCourses = 0;
 
-  for (const course of user.subscription) {
-  const progress = await Progress.findOne({
-    user: req.user._id,
-    course: course._id,
-  });
+  for (const course of user.subscription || []) {
+    const progress = await Progress.findOne({
+      user: req.user._id,
+      course: course._id,
+    });
 
-  const lectures = await Lecture.find({ course: course._id });
-  const totalLectures = lectures.length;
+    const lectures = await Lecture.find({ course: course._id });
+    const totalLectures = lectures.length;
 
-  // console.log("Checking Course:", course.title);
-  // console.log("Total Lectures:", totalLectures);
-  // console.log("Completed Lectures:", progress?.completedLectures?.length);
-
-  if (
-    progress &&
-    totalLectures > 0 &&
-    progress.completedLectures?.length === totalLectures
-  ) {
-    completedCourses++;
+    if (
+      progress &&
+      totalLectures > 0 &&
+      progress.completedLectures?.length === totalLectures
+    ) {
+      completedCourses++;
+    }
   }
-}
-
 
   res.json({
     user: {
@@ -184,6 +189,7 @@ export const getDashboardInfo = TryCatch(async (req, res) => {
     enrolledCourses: user.subscription,
   });
 });
+
 
 // route: GET /api/fix-courses
 
