@@ -3,50 +3,31 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import sendMail, { sendForgotMail } from "../middlewares/sendMail.js";
 import TryCatch from "../middlewares/TryCatch.js";
-import { Progress } from "../models/Progress.js";
-import { Lecture } from "../models/Lecture.js";
-import { Courses } from "../models/Courses.js";
 
 export const register = TryCatch(async (req, res) => {
-  const { email, name, password, phone } = req.body; // 🟢 Accept phone
+  const { email, name, password, phone } = req.body;
 
-  let user = await User.findOne({ email });
-
-  if (user) {
-    return res.status(400).json({
-      message: "User already exists",
-    });
+  if (!email || !name || !password || !phone) {
+    return res.status(400).json({ message: "All fields are required" });
   }
 
-  const hashPassword = await bcrypt.hash(password, 10);
+  const existing = await User.findOne({ email });
+  if (existing) {
+    return res.status(400).json({ message: "User already exists" });
+  }
 
-  user = {
-    name,
-    email,
-    phone, // 🟢 Add phone to user object
-    password: hashPassword,
-  };
-
-  const otp = Math.floor(Math.random() * 1000000);
+  const otp = Math.floor(100000 + Math.random() * 900000);
 
   const activationToken = jwt.sign(
     {
-      user,
+      user: { name, email, password, phone },
       otp,
     },
     process.env.Activation_Secret,
-    {
-      expiresIn: "5m",
-    }
+    { expiresIn: "5m" }
   );
 
-  const data = {
-    name,
-    otp,
-    phone, // 🔵 Optional: include phone in email data if needed
-  };
-
-  await sendMail(email, "E learning - OTP Verification", data);
+  await sendMail(email, "E-learning - OTP Verification", { name, otp });
 
   res.status(200).json({
     message: "OTP sent to your email",
@@ -54,49 +35,41 @@ export const register = TryCatch(async (req, res) => {
   });
 });
 
-
 export const verifyUser = TryCatch(async (req, res) => {
-  const { otp, activationToken } = req.body;
+  const { activationToken, otp } = req.body;
 
-  const verify = jwt.verify(activationToken, process.env.Activation_Secret);
+  let decoded;
+  try {
+    decoded = jwt.verify(activationToken, process.env.Activation_Secret);
+  } catch (err) {
+    return res.status(400).json({ message: "Invalid or expired token" });
+  }
 
-  if (!verify)
-    return res.status(400).json({
-      message: "Otp Expired",
-    });
+  if (decoded.otp !== otp) {
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
 
-  if (verify.otp !== otp)
-    return res.status(400).json({
-      message: "Wrong Otp",
-    });
+  const { name, email, phone, password } = decoded.user;
 
+  // ❗ Don't hash here — handled in schema middleware
   await User.create({
-    name: verify.user.name,
-    email: verify.user.email,
-    password: verify.user.password,
+    name,
+    email,
+    phone,
+    password, // raw password, schema will hash
   });
 
-  res.json({
-    message: "User Registered",
-  });
+  res.json({ message: "User registered successfully" });
 });
 
 export const loginUser = TryCatch(async (req, res) => {
   const { email, password } = req.body;
 
   const user = await User.findOne({ email });
+  if (!user) return res.status(400).json({ message: "No user with this email" });
 
-  if (!user)
-    return res.status(400).json({
-      message: "No User with this email",
-    });
-
-  const mathPassword = await bcrypt.compare(password, user.password);
-
-  if (!mathPassword)
-    return res.status(400).json({
-      message: "wrong Password",
-    });
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) return res.status(400).json({ message: "Wrong password" });
 
   const token = jwt.sign({ _id: user._id }, process.env.Jwt_Sec, {
     expiresIn: "15d",
@@ -109,80 +82,57 @@ export const loginUser = TryCatch(async (req, res) => {
   });
 });
 
+export const forgotPassword = TryCatch(async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user) return res.status(404).json({ message: "No user with this email" });
+
+  const otp = Math.floor(100000 + Math.random() * 900000);
+  user.resetPasswordOtp = otp;
+  user.resetPasswordExpire = Date.now() + 5 * 60 * 1000;
+
+  await user.save();
+  await sendForgotMail("E-Learning Password Reset OTP", { email, otp });
+
+  res.json({ message: "OTP has been sent to your email." });
+});
+
+export const resetPassword = TryCatch(async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) return res.status(404).json({ message: "No user with this email" });
+
+  if (!user.resetPasswordExpire || user.resetPasswordExpire < Date.now()) {
+    return res.status(400).json({ message: "OTP expired" });
+  }
+
+  if (user.resetPasswordOtp !== Number(otp)) {
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+
+  user.password = newPassword; // ❗ raw password — schema will hash
+  user.resetPasswordOtp = null;
+  user.resetPasswordExpire = null;
+
+  await user.save();
+
+  res.json({ message: "Password has been reset successfully." });
+});
+
+
 export const myProfile = TryCatch(async (req, res) => {
   const user = await User.findById(req.user._id);
 
   res.json({ user });
 });
 
-export const forgotPassword = TryCatch(async (req, res) => {
-  const { email } = req.body;
 
-  const user = await User.findOne({ email });
-
-  if (!user) {
-    return res.status(404).json({
-      message: "No user with this email",
-    });
-  }
-
-  // Generate numeric 6-digit OTP
-  const otp = Math.floor(100000 + Math.random() * 900000);
-
-  // Save OTP and expiry time (5 minutes)
-  user.resetPasswordOtp = otp;
-  user.resetPasswordExpire = Date.now() + 5 * 60 * 1000;
-
-  await user.save();
-
-  // Send OTP to user's email
-  await sendForgotMail("E-Learning Password Reset OTP", { email, otp });
-
-  res.json({
-    message: "OTP has been sent to your email.",
-  });
-});
-
-
-export const resetPassword = TryCatch(async (req, res) => {
-  const { email, otp, newPassword } = req.body;
-
-  const user = await User.findOne({ email });
-
-  if (!user) {
-    return res.status(404).json({
-      message: "No user with this email",
-    });
-  }
-
-  // Check OTP expiry
-  if (!user.resetPasswordExpire || user.resetPasswordExpire < Date.now()) {
-    return res.status(400).json({
-      message: "OTP expired",
-    });
-  }
-
-  // Direct numeric comparison (no bcrypt)
-  if (user.resetPasswordOtp !== Number(otp)) {
-    return res.status(400).json({
-      message: "Invalid OTP",
-    });
-  }
-
-  // Hash and update new password
-  const hashedPassword = await bcrypt.hash(newPassword, 10);
-  user.password = hashedPassword;
-
-  // Clear OTP and expiry
-  user.resetPasswordOtp = null;
-  user.resetPasswordExpire = null;
-
-  await user.save();
-
-  res.json({
-    message: "Password has been reset successfully.",
-  });
-});
 
 export const getDashboardInfo = TryCatch(async (req, res) => {
   const user = await User.findById(req.user._id)
