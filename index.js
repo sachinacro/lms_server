@@ -15,7 +15,7 @@ export const instance = new Razorpay({
 const app = express();
 
 app.use(cors({
-  origin: "https://lms-frontend-kdnp.onrender.com", // React app ka URL (no trailing slash)
+  origin: "https://lms-frontend-kdnp.onrender.com/", // React app ka URL (no trailing slash)
   credentials: true
 }));
 
