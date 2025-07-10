@@ -9,10 +9,17 @@ const schema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  video: {
-    type: String,
-    required: true,
-  },
+ video: {
+    url: {
+      type: String,
+      required: true,
+    },
+    public_id: {
+      type: String,
+      required: true,
+    },
+  }
+,
   course: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Courses",

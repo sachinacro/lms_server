@@ -308,49 +308,6 @@ export const updateProfile = TryCatch(async (req, res) => {
   res.json({ message: "Profile updated", user });
 });
 
-// import { OAuth2Client } from "google-auth-library";
-
-// const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-// export const googleLogin = TryCatch(async (req, res) => {
-//   const { token } = req.body;
-
-//   // 1. Verify Google token
-//   const ticket = await client.verifyIdToken({
-//     idToken: token,
-//     audience: process.env.GOOGLE_CLIENT_ID,
-//   });
-
-//   const payload = ticket.getPayload();
-
-//   const { sub: googleId, email, name, picture } = payload;
-
-//   // 2. Check if user already exists
-//   let user = await User.findOne({ email });
-
-//   if (!user) {
-//     // 3. Naya user create karo
-//     user = await User.create({
-//       name,
-//       email,
-//       googleId,
-//       avatar: picture,
-//       password: "googleuser", // placeholder password, not actually used
-//       isVerified: true, // optionally mark as verified
-//     });
-//   }
-
-//   // 4. Apne system ka JWT token banao
-//   const authToken = jwt.sign({ _id: user._id }, process.env.Jwt_Sec, {
-//     expiresIn: "15d",
-//   });
-
-//   res.status(200).json({
-//     message: `Welcome ${user.name}`,
-//     token: authToken,
-//     user,
-//   });
-// });
 import admin from "../middlewares/firebaseAdmin.js";
 
 

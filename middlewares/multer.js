@@ -1,17 +1,15 @@
-// middleware/multer.js
 import multer from "multer";
-import { v4 as uuid } from "uuid";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import cloudinary from "./cloudinary.js";
 
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, "uploads");
-  },
-  filename(req, file, cb) {
-    const id = uuid();
-    const extName = file.originalname.split(".").pop();
-    const fileName = `${id}.${extName}`;
-    cb(null, fileName);
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "LMS_Uploads", // 👈 Your desired folder name in Cloudinary
+    allowed_formats: ["jpg", "jpeg", "png", "webp", "mp4", "mov"],
+    public_id: (req, file) => `${Date.now()}-${file.originalname}`,
+    resource_type: "auto", // optional
   },
 });
 
-export const upload = multer({ storage }); // ✅ named export
+export const upload = multer({ storage });

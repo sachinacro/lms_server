@@ -167,42 +167,6 @@ export const checkout = TryCatch(async (req, res) => {
   });
 });
 
-// export const checkout = TryCatch(async (req, res) => {
-//   const user = await User.findById(req.user._id);
-//   const course = await Courses.findById(req.params.id);
-
-//   if (!course) {
-//     return res.status(404).json({
-//       message: "Course not found",
-//     });
-//   }
-
-//   if (!user) {
-//     return res.status(404).json({
-//       message: "User not found",
-//     });
-//   }
-
-//   if (user.subscription.includes(course._id)) {
-//     return res.status(400).json({
-//       message: "You already have this course",
-//     });
-//   }
-
-//   const options = {
-//     amount: Number(course.price * 100), // in paise
-//     currency: "INR",
-//     receipt: `receipt_${Date.now()}`, // optional but useful for debugging
-//   };
-
-//   const order = await instance.orders.create(options);
-
-//   res.status(201).json({
-//     order,
-//     course,
-//   });
-// });
-
 
 export const paymentVerification = TryCatch(async (req, res) => {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
@@ -248,92 +212,6 @@ export const paymentVerification = TryCatch(async (req, res) => {
   }
 });
 
-// export const addProgress = TryCatch(async (req, res) => {
-//   const progress = await Progress.findOne({
-//     user: req.user._id,
-//     course: req.query.course,
-//   });
-
-//   const { lectureId } = req.query;
-
-//   if (progress.completedLectures.includes(lectureId)) {
-//     return res.json({
-//       message: "Progress recorded",
-//     });
-//   }
-
-//   progress.completedLectures.push(lectureId);
-
-//   await progress.save();
-
-//   res.status(201).json({
-//     message: "new Progress added",
-//   });
-// });
-// export const addProgress = TryCatch(async (req, res) => {
-//   const { course, lectureId } = req.query;
-
-//   // 🟡 Fetch Lecture (to check if quiz is present)
-//   const lecture = await Lecture.findById(lectureId);
-//   if (!lecture) {
-//     return res.status(404).json({ message: "Lecture not found" });
-//   }
-
-//   // 🟢 Fetch Progress
-//   let progress = await Progress.findOne({
-//     user: req.user._id,
-//     course,
-//   });
-
-//   if (!progress) {
-//     // If no progress exists yet, create one
-//     progress = await Progress.create({
-//       user: req.user._id,
-//       course,
-//       completedLectures: [],
-//     });
-//   }
-
-//   // ✅ Already marked
-//   if (progress.completedLectures.includes(lectureId)) {
-//     return res.json({ message: "Progress already recorded" });
-//   }
-
-//   // 🔐 Check: If quiz exists for this lecture, require passing quiz
-//   if (lecture.quiz && lecture.quiz.length > 0) {
-//     // Option 1: Check from DB if user has passed quiz (recommended)
-// //     const user = await User.findById(req.user._id);
-// //    if (
-// //   !user.quizProgress ||
-// //   !user.quizProgress instanceof Map ||
-// //   !user.quizProgress.get(lectureId) ||
-// //   user.quizProgress.get(lectureId).passed !== true
-// // ) {
-// //   return res.status(400).json({
-// //     message: "You must pass the quiz to complete this lecture.",
-// //   });
-// // }
-// const user = await User.findById(req.user._id);
-// const quizProgress = user.quizProgress || {};
-
-// if (
-//   lecture.quiz.length > 0 &&
-//   (!quizProgress[lectureId] || quizProgress[lectureId].passed !== true)
-// ) {
-//   return res.status(400).json({
-//     message: "You must pass the quiz to complete this lecture.",
-//   });
-// }
-
-
-//   }
-
-//   // 🎯 Mark this lecture as completed
-//   progress.completedLectures.push(lectureId);
-//   await progress.save();
-
-//   res.status(201).json({ message: "New progress added" });
-// });
 export const addProgress = TryCatch(async (req, res) => {
   const { course, lectureId } = req.query;
 
