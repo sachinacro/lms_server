@@ -41,10 +41,10 @@ import adminRoutes from "./routes/admin.js";
 import router from "./routes/quizRoute.js";
 
 // ✅ Using routes
-app.use("/api/api", userRoutes);
-app.use("/api/api", courseRoutes);
-app.use("/api/api", adminRoutes);
-app.use("/api/api", router);
+app.use("/api", userRoutes);
+app.use("/api", courseRoutes);
+app.use("/api", adminRoutes);
+app.use("/api", router);
 
 // ✅ Start server
 app.listen(port, () => {
