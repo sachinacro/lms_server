@@ -16,6 +16,7 @@ const app = express();
 
 app.use(cors({
   origin: "https://lms-frontend-kdnp.onrender.com", // ✅ fixed
+  // origin: "http://localhost:5174", // ✅ fixed
   credentials: true
 }));
 

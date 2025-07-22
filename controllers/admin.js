@@ -61,12 +61,12 @@ export const addLectures = TryCatch(async (req, res) => {
   const { title, description } = req.body;
   const courseId = req.params.id;
 
-  // console.log("📦 Course ID:", courseId);
-  // console.log("📄 File info:", req.file);
+  console.log("📦 Course ID:", courseId);
+  console.log("📄 File info:", req.file);
 
   const course = await Courses.findById(courseId).populate("createdBy");
   if (!course) {
-    // console.error("❌ Course not found!");
+    console.error("❌ Course not found!");
     return res.status(404).json({ message: "No Course with this id" });
   }
 
@@ -80,7 +80,7 @@ export const addLectures = TryCatch(async (req, res) => {
       resource_type: "video", // ✅ Required for videos
     });
 
-    // console.log("📤 Upload Result:", JSON.stringify(uploadResult, null, 2));
+    console.log("📤 Upload Result:", JSON.stringify(uploadResult, null, 2));
 
     const lecture = await Lecture.create({
       title,
