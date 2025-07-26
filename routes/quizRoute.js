@@ -21,49 +21,60 @@ router.get("/quiz/:lectureId", isAuth, async (req, res) => {
 // 🟢 Student: Submit quiz
 router.post("/quiz/submit/:lectureId", isAuth, async (req, res) => {
   try {
+    const { lectureId } = req.params;
     const { answers } = req.body;
-    const lecture = await Lecture.findById(req.params.lectureId);
-    if (!lecture)
-      return res.status(404).json({ message: "Lecture not found" });
+    const userId = req.user._id;
 
-    const quiz = lecture.quiz;
-    if (!quiz || quiz.length === 0)
-      return res.status(400).json({ message: "No quiz found for this lecture" });
+    const lecture = await Lecture.findById(lectureId);
+    if (!lecture || !lecture.quiz || lecture.quiz.length === 0) {
+      return res.status(404).json({ message: "Lecture or quiz not found" });
+    }
 
-    let correctCount = 0;
-    quiz.forEach((q, i) => {
-      const correct = q.correctAnswer?.toString().trim().toLowerCase();
-      const given = answers[i]?.toString().trim().toLowerCase();
-      if (correct === given) correctCount++;
+    // ✅ Calculate score
+    let score = 0;
+    lecture.quiz.forEach((question, index) => {
+      if (
+        question.correctOption === answers[index]?.selectedOption
+      ) {
+        score++;
+      }
     });
 
-    const passed = correctCount >= Math.ceil(quiz.length * 0.5); // 50% pass criteria
+    const passed = score >= Math.ceil(lecture.quiz.length / 2);
 
-    // ✅ User progress update
-    const user = await User.findById(req.user._id);
-
-    if (!user.quizProgress) user.quizProgress = new Map();
-
-    const lectureId = req.params.lectureId;
-
-    user.quizProgress.set(lectureId, {
-      passed,
-      score: correctCount,
-    });
-
+    // ✅ Update quizProgress in User model
+    const user = await User.findById(userId);
+    const quizProgress = user.quizProgress || new Map();
+    quizProgress.set(lectureId, { score, passed });
+    user.quizProgress = quizProgress;
     await user.save();
 
-    res.json({
-      total: quiz.length,
-      correct: correctCount,
-      passed,
-      message: passed ? "Quiz passed!" : "Quiz failed. Try again.",
-    });
+    // ✅ Auto progress update if passed
+    if (passed) {
+      const courseId = lecture.course;
+      let progress = await Progress.findOne({ user: userId, course: courseId });
+
+      if (!progress) {
+        progress = await Progress.create({
+          user: userId,
+          course: courseId,
+          completedLectures: [],
+        });
+      }
+
+      if (!progress.completedLectures.includes(lectureId)) {
+        progress.completedLectures.push(lectureId);
+        await progress.save();
+      }
+    }
+
+    res.json({ message: "Quiz submitted", passed, score });
   } catch (error) {
-    console.log("Quiz Submit Error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("Quiz submit error:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 
 
