@@ -3,6 +3,8 @@ import { Lecture } from "../models/Lecture.js";
 import { isAdmin, isAuth } from "../middlewares/isAuth.js";
 import { User } from "../models/User.js";
 import { Courses } from "../models/Courses.js";
+import { Progress } from "../models/Progress.js";
+
 
 const router = express.Router();
 
